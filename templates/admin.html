@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Tableau de Bord Administrateur</h2>
+
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-light shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Chiffre d'Affaires (Aujourd'hui)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_revenue }} FC</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-light shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Commandes (Aujourd'hui)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ orders|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Commandes de la Journée</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Numéro de Table</th>
+                                <th>Plats</th>
+                                <th>Prix Total</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>{{ order[0] }}</td>
+                                <td>{{ order[1] }}</td>
+                                <td>
+                                    <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#orderDetails{{ order[0] }}" aria-expanded="false" aria-controls="orderDetails{{ order[0] }}">
+                                        Voir détails
+                                    </button>
+                                    <div class="collapse" id="orderDetails{{ order[0] }}">
+                                        <ul class="list-unstyled mt-2">
+                                            {% for item in order[2] %}
+                                            <li>{{ item['name'] }} - {{ item['price'] }} FC</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </td>
+                                <td>{{ order[3] }} FC</td>
+                                <td>{{ order[4] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Chiffre d'Affaires de la Semaine</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script>
+    loadRevenueChart();
+    setInterval(function() {
+        fetch('/api/orders')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#ordersTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${order[0]}</td>
+                        <td>${order[1]}</td>
+                        <td>
+                            <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#orderDetails${order[0]}" aria-expanded="false" aria-controls="orderDetails${order[0]}">
+                                Voir détails
+                            </button>
+                            <div class="collapse" id="orderDetails${order[0]}">
+                                <ul class="list-unstyled mt-2">
+                                    ${order[2].map(item => `<li>${item.name} - ${item.price} FC</li>`).join('')}
+                                </ul>
+                            </div>
+                        </td>
+                        <td>${order[3]} FC</td>
+                        <td>${order[4]}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+    }, 86400000); // Mise à jour toutes les 24 heures
+</script>
+{% endblock %}

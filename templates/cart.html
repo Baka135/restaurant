@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Panier{% endblock %}
+
+{% block content %}
+<h2>Votre Panier</h2>
+<div class="row">
+    {% if session['cart'] %}
+        {% for item in session['cart'] %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{{ url_for('static', filename='images/' + item['img']) }}" class="card-img-top" alt="{{ item['name'] }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item['name'] }}</h5>
+                    <p class="card-text">{{ item['price'] }} FC</p>
+                    <form action="{{ url_for('remove_from_cart') }}" method="post">
+                        <input type="hidden" name="item_id" value="{{ item['id'] }}">
+                        <button type="submit" class="btn btn-danger">Retirer du Panier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="col-12">
+            <h3>Total: {{ total_price }} FC</h3>
+            <form action="{{ url_for('place_order') }}" method="post">
+                <label for="table_number">Numéro de Table:</label>
+                <input type="text" name="table_number" class="form-control mb-3" required>
+                <button type="submit" class="btn btn-success">Commander</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Votre panier est vide.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Desserts{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Nos Desserts</h2>
+    <div class="row">
+        {% for item in items %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{{ url_for('static', filename=item[3]) }}" class="card-img-top" alt="{{ item[1] }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item[1] }}</h5>
+                    <p class="card-text">{{ item[2] }} FC</p>
+                    <form action="{{ url_for('add_to_cart') }}" method="POST">
+                        <input type="hidden" name="item_id" value="{{ item[0] }}">
+                        <input type="hidden" name="redirect" value="desserts">
+                        <button type="submit" class="btn btn-primary">Ajouter au panier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
