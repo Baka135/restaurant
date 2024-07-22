@@ -20,8 +20,10 @@ h1, h2, h3, h5 {
 }
 
 .carousel-inner img {
-    height: 500px;
-    object-fit: cover;
+    width: 100%;
+    height: auto;
+    object-fit: contain; /* Modifié pour éviter un trop grand zoom */
+    object-position: center; /* Centre l'image */
 }
 
 .container {
