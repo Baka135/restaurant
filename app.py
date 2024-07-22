@@ -195,7 +195,7 @@ def admin():
 
     return render_template('admin.html', orders=orders, total_revenue=total_revenue)
 
-@app.route('/api/orders')
+@app.route('/api/orders', methods=['GET'])
 def api_orders():
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()
@@ -213,7 +213,7 @@ def api_orders():
 
     return jsonify(orders)
 
-@app.route('/api/revenue')
+@app.route('/api/revenue', methods=['GET'])
 def api_revenue():
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()

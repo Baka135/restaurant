@@ -105,8 +105,36 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='charts.js') }}"></script>
 <script>
-    loadRevenueChart();
-    setInterval(function() {
+    function loadRevenueChart() {
+        fetch('/api/revenue')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                const chartData = {
+                    labels: data.map(item => item[0]),
+                    datasets: [{
+                        label: 'Chiffre d\'Affaires',
+                        data: data.map(item => item[1]),
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                };
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    function fetchOrders() {
         fetch('/api/orders')
             .then(response => response.json())
             .then(data => {
@@ -133,6 +161,12 @@
                     tbody.appendChild(row);
                 });
             });
-    }, 86400000); // Mise à jour toutes les 24 heures
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadRevenueChart();
+        fetchOrders(); // Fetch orders initially
+        setInterval(fetchOrders, 10000); // Fetch every 10 seconds
+    });
 </script>
 {% endblock %}
