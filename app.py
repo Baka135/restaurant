@@ -10,6 +10,8 @@ app.secret_key = 'supersecretkey'
 def init_db():
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()
+    
+    # Crée les tables si elles n'existent pas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY,
@@ -35,8 +37,12 @@ def init_db():
             category TEXT NOT NULL
         )
     ''')
+
     conn.commit()
     conn.close()
+
+# Initialisation de la base de données au démarrage de l'application
+init_db()
 
 @app.route('/')
 def index():
@@ -234,11 +240,5 @@ def logout():
     flash('Déconnexion réussie.')
     return redirect(url_for('index'))
 
-@app.route('/init-db')
-def init_db_route():
-    init_db()
-    return 'Base de données initialisée avec succès!'
-
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
