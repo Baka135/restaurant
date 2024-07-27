@@ -5,7 +5,12 @@ body {
     padding: 0;
 }
 
-.navbar-brand {
+.navbar {
+    background-color: #D2691E; /* Chocolat */
+}
+
+.navbar-brand, .navbar-nav .nav-item .nav-link {
+    color: white; /* Texte en blanc pour contraste */
     font-size: 1.5rem;
     font-weight: bold;
 }
@@ -16,14 +21,14 @@ body {
 }
 
 h1, h2, h3, h5 {
-    color: #333;
+    color: #D2691E; /* Chocolat */
 }
 
 .carousel-inner img {
     width: 100%;
     height: auto;
-    object-fit: contain; /* Modifié pour éviter un trop grand zoom */
-    object-position: center; /* Centre l'image */
+    object-fit: contain; /* Éviter un trop grand zoom */
+    object-position: center; /* Centrer l'image */
 }
 
 .container {
@@ -49,10 +54,11 @@ h1, h2, h3, h5 {
 .card-title {
     font-size: 1.25rem;
     font-weight: bold;
+    color: #D2691E; /* Chocolat */
 }
 
 .card-text {
-    color: #007bff;
+    color: #FFD700; /* Jaune */
     font-size: 1rem;
     font-weight: bold;
 }
@@ -60,6 +66,15 @@ h1, h2, h3, h5 {
 .btn {
     font-size: 1rem;
     font-weight: bold;
+    background-color: #FFD700; /* Jaune */
+    border-color: #FFD700; /* Jaune */
+    color: #333; /* Couleur du texte */
+}
+
+.btn:hover {
+    background-color: #e5c100; /* Une version plus foncée du jaune */
+    border-color: #e5c100; /* Une version plus foncée du jaune */
+    color: #333; /* Couleur du texte */
 }
 
 .alert {
@@ -89,7 +104,7 @@ h1, h2, h3, h5 {
 }
 
 .table thead th {
-    background-color: #007bff;
+    background-color: #FFD700; /* Jaune */
     color: white;
 }
 
@@ -98,24 +113,21 @@ h1, h2, h3, h5 {
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 123, 255, 0.05);
+    background-color: rgba(255, 215, 0, 0.1); /* Jaune clair */
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.1);
-}
-
-.table td ul {
-    padding-left: 20px;
-    list-style-type: disc;
+    background-color: rgba(255, 215, 0, 0.2); /* Jaune légèrement plus foncé */
 }
 
 .btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
+    background-color: #FFD700; /* Jaune */
+    border-color: #FFD700; /* Jaune */
+    color: #333; /* Couleur du texte */
 }
 
 .btn-info:hover {
-    background-color: #138496;
-    border-color: #117a8b;
+    background-color: #e5c100; /* Une version plus foncée du jaune */
+    border-color: #e5c100; /* Une version plus foncée du jaune */
+    color: #333; /* Couleur du texte */
 }

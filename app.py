@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf import CSRFProtect
 import sqlite3
 import datetime
 import json
+import os
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.urandom(24)
+csrf = CSRFProtect(app)
 
 def init_db():
     conn = sqlite3.connect('restaurant.db')
@@ -34,7 +37,19 @@ def init_db():
             name TEXT NOT NULL,
             price INTEGER NOT NULL,
             img TEXT NOT NULL,
-            category TEXT NOT NULL
+            category TEXT NOT NULL,
+            stock INTEGER NOT NULL DEFAULT 10
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            item_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (item_id) REFERENCES menu_items(id)
         )
     ''')
 
@@ -46,7 +61,12 @@ init_db()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    conn = sqlite3.connect('restaurant.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM menu_items WHERE category='dish' ORDER BY RANDOM() LIMIT 3")
+    dishes = cursor.fetchall()
+    conn.close()
+    return render_template('index.html', items=dishes)
 
 @app.route('/dishes')
 def dishes():
@@ -81,6 +101,7 @@ def cart():
     return render_template('cart.html', total_price=total_price)
 
 @app.route('/add-to-cart', methods=['POST'])
+@csrf.exempt
 def add_to_cart():
     item_id = request.form['item_id']
     conn = sqlite3.connect('restaurant.db')
@@ -88,6 +109,14 @@ def add_to_cart():
     cursor.execute("SELECT * FROM menu_items WHERE id=?", (item_id,))
     item = cursor.fetchone()
     conn.close()
+
+    if not item:
+        flash("Article non trouvé.")
+        return redirect(url_for('cart'))
+
+    if item[5] <= 0:
+        flash("L'article est en rupture de stock.")
+        return redirect(url_for('cart'))
 
     if 'cart' not in session:
         session['cart'] = []
@@ -103,6 +132,7 @@ def add_to_cart():
     return redirect(url_for(request.form['redirect']))
 
 @app.route('/remove-from-cart', methods=['POST'])
+@csrf.exempt
 def remove_from_cart():
     item_id = int(request.form['item_id'])
     session['cart'] = [item for item in session['cart'] if item['id'] != item_id]
@@ -111,6 +141,7 @@ def remove_from_cart():
     return redirect(url_for('cart'))
 
 @app.route('/place-order', methods=['POST'])
+@csrf.exempt
 def place_order():
     if 'cart' not in session or len(session['cart']) == 0:
         flash("Votre panier est vide. Ajoutez des articles avant de commander.")
@@ -126,6 +157,10 @@ def place_order():
         INSERT INTO orders (table_number, items, total_price, order_date)
         VALUES (?, ?, ?, ?)
     ''', (table_number, json.dumps(items), total_price, datetime.date.today()))
+
+    for item in items:
+        cursor.execute("UPDATE menu_items SET stock = stock - 1 WHERE id=?", (item['id'],))
+
     conn.commit()
     conn.close()
     session.pop('cart', None)
@@ -133,6 +168,7 @@ def place_order():
     return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
+@csrf.exempt
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -152,6 +188,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
+@csrf.exempt
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -200,6 +237,44 @@ def admin():
             orders[i][2] = []
 
     return render_template('admin.html', orders=orders, total_revenue=total_revenue)
+
+@app.route('/user_orders')
+def user_orders():
+    if 'user_id' not in session:
+        flash('Veuillez vous connecter pour accéder à cette page.')
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    conn = sqlite3.connect('restaurant.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM orders WHERE table_number = ?', (user_id,))
+    orders = cursor.fetchall()
+    conn.close()
+    
+    return render_template('user_orders.html', orders=orders)
+
+@app.route('/feedback', methods=['POST'])
+@csrf.exempt
+def feedback():
+    if 'user_id' not in session:
+        flash('Veuillez vous connecter pour laisser un commentaire.')
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    item_id = request.form['item_id']
+    rating = int(request.form['rating'])
+    comment = request.form['comment']
+
+    conn = sqlite3.connect('restaurant.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO feedback (user_id, item_id, rating, comment)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, item_id, rating, comment))
+    conn.commit()
+    conn.close()
+    flash('Merci pour votre commentaire.')
+    return redirect(url_for('index'))
 
 @app.route('/api/orders', methods=['GET'])
 def api_orders():
