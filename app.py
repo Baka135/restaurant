@@ -3,22 +3,21 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import CSRFProtect
 import sqlite3
 import datetime
+from datetime import timedelta
 import json
 import os
-from datetime import timedelta  # Assurez-vous d'importer timedelta
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 csrf = CSRFProtect(app)
 
-# Configuration pour la persistance des sessions
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# Initialisation de la base de données
 def init_db():
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()
     
+    # Crée les tables si elles n'existent pas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY,
@@ -47,7 +46,7 @@ def init_db():
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS feedback (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             item_id INTEGER NOT NULL,
             rating INTEGER NOT NULL,
@@ -60,9 +59,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Initialisation de la base de données au démarrage de l'application
 init_db()
 
-# Routes
 @app.route('/')
 def index():
     conn = sqlite3.connect('restaurant.db')
@@ -118,7 +117,7 @@ def add_to_cart():
         flash("Article non trouvé.")
         return redirect(url_for('cart'))
 
-    if item[5] <= 0:
+    if len(item) < 6 or item[5] <= 0:  # Vérifie que l'index 5 existe et que le stock est suffisant
         flash("L'article est en rupture de stock.")
         return redirect(url_for('cart'))
 
@@ -184,7 +183,6 @@ def login():
         conn.close()
         if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
-            session.permanent = True  # Rendre la session permanente
             flash('Connexion réussie.')
             return redirect(url_for('admin'))
         else:
