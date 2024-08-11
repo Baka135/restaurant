@@ -5,8 +5,9 @@ def insert_desserts():
     cursor = conn.cursor()
 
     desserts = [
-        ("Crème", 2500, "static/images/crème.jpg", "dessert"),
-        ("Tarte", 3000, "static/images/tarte.jpg", "dessert")
+        ("Crème", 2500, "static/images/creme.jpg", "dessert"),
+        ("Tarte", 3000, "static/images/tarte.jpg", "dessert"),
+        ("Glace", 3000, "static/images/glace.jpg", "dessert"),
     ]
 
     cursor.executemany('''

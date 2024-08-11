@@ -1,65 +1,57 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import CSRFProtect
+from flask_sqlalchemy import SQLAlchemy
+from flask_session import Session
 import sqlite3
 import datetime
-from datetime import timedelta
 import json
 import os
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
-csrf = CSRFProtect(app)
+app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restaurant.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_TYPE'] = 'sqlalchemy'
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+db = SQLAlchemy(app)
+app.config['SESSION_SQLALCHEMY'] = db
+
+csrf = CSRFProtect(app)
+Session(app)
+
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    table_number = db.Column(db.String(10), nullable=False)
+    items = db.Column(db.Text, nullable=False)
+    total_price = db.Column(db.Integer, nullable=False)
+    order_date = db.Column(db.Date, nullable=False)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+
+class MenuItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    img = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    stock = db.Column(db.Integer, default=10, nullable=False)
+
+class Feedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
 
 def init_db():
-    conn = sqlite3.connect('restaurant.db')
-    cursor = conn.cursor()
-    
-    # Crée les tables si elles n'existent pas
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY,
-            table_number TEXT NOT NULL,
-            items TEXT NOT NULL,
-            total_price INTEGER NOT NULL,
-            order_date DATE NOT NULL
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS menu_items (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            price INTEGER NOT NULL,
-            img TEXT NOT NULL,
-            category TEXT NOT NULL,
-            stock INTEGER NOT NULL DEFAULT 10
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS feedback (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            item_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL,
-            comment TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (item_id) REFERENCES menu_items(id)
-        )
-    ''')
+    with app.app_context():
+        db.create_all()
 
-    conn.commit()
-    conn.close()
-
-# Initialisation de la base de données au démarrage de l'application
 init_db()
 
 @app.route('/')
@@ -117,7 +109,7 @@ def add_to_cart():
         flash("Article non trouvé.")
         return redirect(url_for('cart'))
 
-    if len(item) < 6 or item[5] <= 0:  # Vérifie que l'index 5 existe et que le stock est suffisant
+    if item[5] <= 0:
         flash("L'article est en rupture de stock.")
         return redirect(url_for('cart'))
 
@@ -197,7 +189,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         hashed_password = generate_password_hash(password)
-        
+
         conn = sqlite3.connect('restaurant.db')
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
@@ -205,7 +197,7 @@ def register():
         if user:
             flash('Le nom d\'utilisateur existe déjà.')
             return redirect(url_for('register'))
-        
+
         cursor.execute('''
             INSERT INTO users (username, password)
             VALUES (?, ?)
@@ -221,7 +213,7 @@ def admin():
     if 'user_id' not in session:
         flash('Veuillez vous connecter pour accéder à cette page.')
         return redirect(url_for('login'))
-    
+
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM orders WHERE order_date = ?', (datetime.date.today(),))
@@ -231,7 +223,6 @@ def admin():
     total_revenue = total_revenue if total_revenue else 0
     conn.close()
 
-    # Convert JSON string to Python objects for items
     for i, order in enumerate(orders):
         try:
             orders[i] = list(order)
@@ -246,14 +237,14 @@ def user_orders():
     if 'user_id' not in session:
         flash('Veuillez vous connecter pour accéder à cette page.')
         return redirect(url_for('login'))
-    
+
     user_id = session['user_id']
     conn = sqlite3.connect('restaurant.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM orders WHERE table_number = ?', (user_id,))
     orders = cursor.fetchall()
     conn.close()
-    
+
     return render_template('user_orders.html', orders=orders)
 
 @app.route('/feedback', methods=['POST'])
@@ -262,7 +253,7 @@ def feedback():
     if 'user_id' not in session:
         flash('Veuillez vous connecter pour laisser un commentaire.')
         return redirect(url_for('login'))
-    
+
     user_id = session['user_id']
     item_id = request.form['item_id']
     rating = int(request.form['rating'])
@@ -287,7 +278,6 @@ def api_orders():
     orders = cursor.fetchall()
     conn.close()
 
-    # Convert JSON string to Python objects for items
     for i, order in enumerate(orders):
         try:
             orders[i] = list(order)
