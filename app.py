@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
-from flask_session import Session
 import sqlite3
 import datetime
 import json
@@ -12,14 +11,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///restaurant.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
 db = SQLAlchemy(app)
-app.config['SESSION_SQLALCHEMY'] = db
-
 csrf = CSRFProtect(app)
-Session(app)
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
