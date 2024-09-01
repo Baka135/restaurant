@@ -5,7 +5,7 @@ def insert_dishes():
     cursor = conn.cursor()
 
     dishes = [
-        ("Poulet", 5000, "static/images/poulet.jpg", "dish"),
+        ("Poulet", 6000, "static/images/poulet.jpg", "dish"),
         ("Poisson", 6000, "static/images/poisson.jpg", "dish"),
         ("Makemba", 3000, "static/images/makemba.jpg", "dish"),
         ("Pâtes", 4000, "static/images/pâtes.jpg", "dish")
